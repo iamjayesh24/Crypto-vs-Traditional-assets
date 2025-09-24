@@ -62,30 +62,45 @@ async def fetch_crypto_data(symbol: str, period: str) -> List[Dict]:
             else:  # ALL
                 days = 1825  # 5 years
             
+            # Use free CoinGecko API with proper rate limiting
             url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
             params = {"vs_currency": "usd", "days": days, "interval": "daily"}
             
-            response = requests.get(url, params=params, timeout=10)
+            headers = {
+                'User-Agent': 'Financial-Chart-App/1.0',
+                'Accept': 'application/json'
+            }
+            
+            response = requests.get(url, params=params, headers=headers, timeout=15)
+            
             if response.status_code == 200:
                 data = response.json()
-                prices = data["prices"]
-                
-                result = []
-                base_price = prices[0][1] if prices else 1
-                
-                for timestamp, price in prices:
-                    date = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
-                    normalized_return = ((price - base_price) / base_price) * 100
-                    result.append({
-                        "date": date,
-                        "price": float(price),
-                        "normalized_return": float(normalized_return)
-                    })
-                
-                return result
+                if 'prices' in data and data['prices']:
+                    prices = data["prices"]
+                    
+                    result = []
+                    base_price = float(prices[0][1]) if prices else 1
+                    
+                    for timestamp, price in prices:
+                        date = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
+                        normalized_return = ((price - base_price) / base_price) * 100
+                        result.append({
+                            "date": date,
+                            "price": float(price),
+                            "normalized_return": float(normalized_return)
+                        })
+                    
+                    return result
+                else:
+                    logging.warning("No price data in CoinGecko response, using sample data")
+                    return generate_sample_crypto_data(period)
             else:
-                # Fallback to sample data if API fails
+                logging.warning(f"CoinGecko API returned status {response.status_code}, using sample data")
                 return generate_sample_crypto_data(period)
+                
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Network error fetching crypto data: {e}")
+            return generate_sample_crypto_data(period)
         except Exception as e:
             logging.error(f"Error fetching crypto data: {e}")
             return generate_sample_crypto_data(period)
