@@ -48,66 +48,6 @@ class PerformanceResponse(BaseModel):
     timeframe: str
 
 # Helper functions for data fetching
-async def fetch_crypto_data(symbol: str, period: str) -> List[Dict]:
-    """Fetch crypto data from CoinGecko API"""
-    def _fetch():
-        try:
-            # CoinGecko API for historical data
-            if period == "1M":
-                days = 30
-            elif period == "6M":
-                days = 180
-            elif period == "1Y":
-                days = 365
-            else:  # ALL
-                days = 1825  # 5 years
-            
-            # Use free CoinGecko API with proper rate limiting
-            url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart"
-            params = {"vs_currency": "usd", "days": days, "interval": "daily"}
-            
-            headers = {
-                'User-Agent': 'Financial-Chart-App/1.0',
-                'Accept': 'application/json'
-            }
-            
-            response = requests.get(url, params=params, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'prices' in data and data['prices']:
-                    prices = data["prices"]
-                    
-                    result = []
-                    base_price = float(prices[0][1]) if prices else 1
-                    
-                    for timestamp, price in prices:
-                        date = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
-                        normalized_return = ((price - base_price) / base_price) * 100
-                        result.append({
-                            "date": date,
-                            "price": float(price),
-                            "normalized_return": float(normalized_return)
-                        })
-                    
-                    return result
-                else:
-                    logging.warning("No price data in CoinGecko response, using sample data")
-                    return generate_sample_crypto_data(period)
-            else:
-                logging.warning(f"CoinGecko API returned status {response.status_code}, using sample data")
-                return generate_sample_crypto_data(period)
-                
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Network error fetching crypto data: {e}")
-            return generate_sample_crypto_data(period)
-        except Exception as e:
-            logging.error(f"Error fetching crypto data: {e}")
-            return generate_sample_crypto_data(period)
-    
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(executor, _fetch)
-
 async def fetch_top_cryptos_list() -> List[Dict]:
     """Fetch top 100 cryptocurrencies by market cap from CoinGecko"""
     def _fetch():
