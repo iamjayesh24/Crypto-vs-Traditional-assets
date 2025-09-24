@@ -186,7 +186,7 @@ const PerformanceChart = () => {
             stroke="#f7931a"
             strokeWidth={3}
             dot={false}
-            name="Bitcoin"
+            name="Top 10 Crypto Portfolio"
           />
           <Line
             type="monotone"
