@@ -324,9 +324,9 @@ const PerformanceChart = () => {
         {/* Asset Information */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-lg font-semibold mb-3 text-orange-400">Bitcoin (BTC)</h3>
+            <h3 className="text-lg font-semibold mb-3 text-orange-400">Top 10 Crypto Portfolio</h3>
             <p className="text-gray-300 text-sm">
-              The world's first and largest cryptocurrency by market capitalization. Known for its high volatility and potential for significant returns.
+              Equal-weighted portfolio of the top 10 cryptocurrencies by market cap: Bitcoin, Ethereum, Binance Coin, Solana, XRP, Cardano, Avalanche, Dogecoin, Polkadot, and Chainlink.
             </p>
           </div>
           <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
