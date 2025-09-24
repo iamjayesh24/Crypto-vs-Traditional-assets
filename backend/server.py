@@ -384,7 +384,7 @@ async def get_performance_data(timeframe: str):
     
     try:
         # Fetch data concurrently
-        crypto_task = fetch_crypto_data("bitcoin", timeframe)
+        crypto_task = fetch_crypto_portfolio_data(timeframe)
         traditional_task = fetch_traditional_data(timeframe)
         
         crypto_data, traditional_data = await asyncio.gather(crypto_task, traditional_task)
