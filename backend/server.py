@@ -108,6 +108,151 @@ async def fetch_crypto_data(symbol: str, period: str) -> List[Dict]:
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(executor, _fetch)
 
+async def fetch_top_cryptos_list() -> List[Dict]:
+    """Fetch top 100 cryptocurrencies by market cap from CoinGecko"""
+    def _fetch():
+        try:
+            url = "https://api.coingecko.com/api/v3/coins/markets"
+            params = {
+                "vs_currency": "usd",
+                "order": "market_cap_desc",
+                "per_page": 100,
+                "page": 1,
+                "sparkline": False
+            }
+            
+            headers = {
+                'User-Agent': 'Financial-Chart-App/1.0',
+                'Accept': 'application/json'
+            }
+            
+            response = requests.get(url, params=params, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return [{
+                    "id": coin["id"],
+                    "symbol": coin["symbol"].upper(),
+                    "name": coin["name"],
+                    "market_cap_rank": coin["market_cap_rank"],
+                    "current_price": coin["current_price"],
+                    "market_cap": coin["market_cap"]
+                } for coin in data[:100]]
+            else:
+                logging.warning(f"Failed to fetch top cryptos: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logging.error(f"Error fetching top cryptos: {e}")
+            return []
+    
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(executor, _fetch)
+
+async def fetch_crypto_portfolio_data(period: str) -> List[Dict]:
+    """Fetch top 10 crypto portfolio data from CoinGecko API"""
+    def _fetch():
+        try:
+            # Get top 10 cryptocurrencies for portfolio
+            top_cryptos = ["bitcoin", "ethereum", "binancecoin", "solana", "xrp", 
+                          "cardano", "avalanche-2", "dogecoin", "polkadot", "chainlink"]
+            
+            if period == "1M":
+                days = 30
+            elif period == "6M":
+                days = 180
+            elif period == "1Y":
+                days = 365
+            else:  # ALL
+                days = 1825
+            
+            crypto_data = {}
+            
+            # Fetch data for each crypto
+            for crypto_id in top_cryptos:
+                try:
+                    url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart"
+                    params = {"vs_currency": "usd", "days": days, "interval": "daily"}
+                    
+                    headers = {
+                        'User-Agent': 'Financial-Chart-App/1.0',
+                        'Accept': 'application/json'
+                    }
+                    
+                    response = requests.get(url, params=params, headers=headers, timeout=10)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        if 'prices' in data and data['prices']:
+                            crypto_data[crypto_id] = data['prices']
+                    
+                    # Rate limiting
+                    import time
+                    time.sleep(0.5)  # 500ms delay between requests
+                    
+                except Exception as e:
+                    logging.warning(f"Failed to fetch {crypto_id}: {e}")
+                    continue
+            
+            if not crypto_data:
+                logging.warning("No crypto data fetched, using sample data")
+                return generate_sample_crypto_data(period)
+            
+            # Calculate equal-weighted crypto portfolio performance
+            result = []
+            all_dates = set()
+            
+            # Collect all unique dates
+            for prices in crypto_data.values():
+                for timestamp, price in prices:
+                    date = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
+                    all_dates.add(date)
+            
+            sorted_dates = sorted(list(all_dates))
+            
+            # Calculate portfolio value for each date
+            base_values = {}
+            for crypto_id, prices in crypto_data.items():
+                if prices:
+                    base_values[crypto_id] = float(prices[0][1])
+            
+            for date in sorted_dates:
+                portfolio_return = 0
+                valid_cryptos = 0
+                
+                for crypto_id, prices in crypto_data.items():
+                    # Find price for this date
+                    date_price = None
+                    for timestamp, price in prices:
+                        price_date = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d')
+                        if price_date == date:
+                            date_price = float(price)
+                            break
+                    
+                    if date_price and crypto_id in base_values:
+                        crypto_return = ((date_price - base_values[crypto_id]) / base_values[crypto_id]) * 100
+                        portfolio_return += crypto_return
+                        valid_cryptos += 1
+                
+                if valid_cryptos > 0:
+                    avg_return = portfolio_return / valid_cryptos
+                    avg_price = 100 * (1 + avg_return / 100)  # Normalized to 100 base
+                    
+                    result.append({
+                        "date": date,
+                        "price": float(avg_price),
+                        "normalized_return": float(avg_return)
+                    })
+            
+            return result if result else generate_sample_crypto_data(period)
+            
+        except Exception as e:
+            logging.error(f"Error fetching crypto portfolio data: {e}")
+            return generate_sample_crypto_data(period)
+    
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(executor, _fetch)
+
 async def fetch_traditional_data(period: str) -> List[Dict]:
     """Fetch traditional portfolio data (60% SPY, 40% TLT)"""
     def _fetch():
