@@ -116,19 +116,19 @@ async def fetch_traditional_data(period: str) -> List[Dict]:
                 return generate_sample_traditional_data(period)
             
             # Calculate 60/40 portfolio returns
-            spy_prices = spy['Close'].values
-            tlt_prices = tlt['Close'].values
-            dates = spy.index
+            spy_prices = spy['Close'].tolist()  # Convert to list
+            tlt_prices = tlt['Close'].tolist()  # Convert to list
+            dates = spy.index.tolist()
             
             result = []
-            base_spy = spy_prices[0]
-            base_tlt = tlt_prices[0]
+            base_spy = float(spy_prices[0])
+            base_tlt = float(tlt_prices[0])
             
             for i, date in enumerate(dates):
                 if i < len(spy_prices) and i < len(tlt_prices):
                     # Calculate individual returns
-                    spy_return = ((spy_prices[i] - base_spy) / base_spy)
-                    tlt_return = ((tlt_prices[i] - base_tlt) / base_tlt)
+                    spy_return = ((float(spy_prices[i]) - base_spy) / base_spy)
+                    tlt_return = ((float(tlt_prices[i]) - base_tlt) / base_tlt)
                     
                     # 60/40 weighted return
                     portfolio_return = (0.6 * spy_return + 0.4 * tlt_return) * 100
@@ -136,8 +136,8 @@ async def fetch_traditional_data(period: str) -> List[Dict]:
                     
                     result.append({
                         "date": date.strftime('%Y-%m-%d'),
-                        "price": portfolio_price,
-                        "normalized_return": portfolio_return
+                        "price": float(portfolio_price),
+                        "normalized_return": float(portfolio_return)
                     })
             
             return result
