@@ -292,7 +292,7 @@ const PerformanceChart = () => {
         {performanceData && performanceData.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h3 className="text-lg font-semibold mb-2 text-orange-400">Bitcoin Performance</h3>
+              <h3 className="text-lg font-semibold mb-2 text-orange-400">Top 10 Crypto Portfolio Performance</h3>
               <div className="text-2xl font-bold">
                 {performanceData[performanceData.length - 1]?.crypto > 0 ? '+' : ''}
                 {performanceData[performanceData.length - 1]?.crypto.toFixed(2)}%
