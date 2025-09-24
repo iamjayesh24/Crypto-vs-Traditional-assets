@@ -344,9 +344,8 @@ async def get_assets_info():
     """Get information about the assets being compared"""
     return {
         "crypto": {
-            "name": "Bitcoin",
-            "symbol": "BTC",
-            "description": "Leading cryptocurrency",
+            "name": "Crypto Portfolio",
+            "description": "Equal-weighted portfolio of top 10 cryptocurrencies",
             "color": "#f7931a"
         },
         "traditional": {
@@ -355,6 +354,16 @@ async def get_assets_info():
             "color": "#3b82f6"
         }
     }
+
+@api_router.get("/cryptos/top")
+async def get_top_cryptos():
+    """Get top 100 cryptocurrencies by market cap"""
+    try:
+        cryptos = await fetch_top_cryptos_list()
+        return {"cryptos": cryptos, "count": len(cryptos)}
+    except Exception as e:
+        logging.error(f"Error fetching top cryptos: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch top cryptocurrencies")
 
 # Include the router in the main app
 app.include_router(api_router)
