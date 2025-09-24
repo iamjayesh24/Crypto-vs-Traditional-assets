@@ -78,8 +78,8 @@ async def fetch_crypto_data(symbol: str, period: str) -> List[Dict]:
                     normalized_return = ((price - base_price) / base_price) * 100
                     result.append({
                         "date": date,
-                        "price": price,
-                        "normalized_return": normalized_return
+                        "price": float(price),
+                        "normalized_return": float(normalized_return)
                     })
                 
                 return result
