@@ -98,7 +98,7 @@ const PerformanceChart = () => {
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               <span className="font-medium">
-                {entry.name === 'crypto' ? 'Bitcoin' : '60/40 Portfolio'}:
+                {entry.name === 'crypto' ? 'Top 10 Crypto Portfolio' : '60/40 Portfolio'}:
               </span>
               <span className="ml-2 font-bold">
                 {entry.value > 0 ? '+' : ''}{entry.value.toFixed(2)}%
