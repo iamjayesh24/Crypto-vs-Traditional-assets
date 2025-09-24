@@ -148,7 +148,7 @@ const PerformanceChart = () => {
             stroke="#f7931a"
             strokeWidth={2}
             fill="url(#cryptoGradient)"
-            name="Bitcoin"
+            name="Top 10 Crypto Portfolio"
           />
           <Area
             type="monotone"
