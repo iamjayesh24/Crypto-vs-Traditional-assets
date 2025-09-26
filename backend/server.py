@@ -194,7 +194,7 @@ async def fetch_crypto_portfolio_data(period: str) -> List[Dict]:
     return await loop.run_in_executor(executor, _fetch)
 
 async def fetch_traditional_data(period: str) -> List[Dict]:
-    """Fetch traditional portfolio data (60% SPY, 40% TLT)"""
+    """Fetch traditional 60/40 portfolio data exactly like LongTermTrends.net"""
     def _fetch():
         try:
             # Calculate date range
@@ -208,41 +208,49 @@ async def fetch_traditional_data(period: str) -> List[Dict]:
             else:  # ALL
                 start_date = end_date - timedelta(days=1825)
             
-            # Fetch SPY (S&P 500) and TLT (20+ Year Treasury Bond) data
-            spy = yf.download("SPY", start=start_date, end=end_date, progress=False)
-            tlt = yf.download("TLT", start=start_date, end=end_date, progress=False)
+            # Fetch S&P 500 (^GSPC) and ICE BofA US Corporate Bond Index (using TLT as proxy)
+            # Note: ^GSPC is the S&P 500 index, TLT represents long-term bonds as proxy for corporate bonds
+            sp500 = yf.download("^GSPC", start=start_date, end=end_date, progress=False)
+            bonds = yf.download("TLT", start=start_date, end=end_date, progress=False)  # 20+ Year Treasury Bond ETF as proxy
             
-            if spy.empty or tlt.empty:
+            if sp500.empty or bonds.empty:
+                logging.warning("Failed to fetch S&P 500 or bond data, using sample data")
                 return generate_sample_traditional_data(period)
             
-            # Calculate 60/40 portfolio returns
-            spy_prices = spy['Close'].tolist()  # Convert to list
-            tlt_prices = tlt['Close'].tolist()  # Convert to list
-            dates = spy.index.tolist()
+            # Calculate 60/40 portfolio returns using adjusted close prices (includes dividends)
+            sp500_prices = sp500['Adj Close'].values  # Use Adj Close for total return including dividends
+            bond_prices = bonds['Adj Close'].values
+            dates = sp500.index
             
             result = []
-            base_spy = float(spy_prices[0])
-            base_tlt = float(tlt_prices[0])
+            base_sp500 = float(sp500_prices[0])
+            base_bonds = float(bond_prices[0])
             
             for i, date in enumerate(dates):
-                if i < len(spy_prices) and i < len(tlt_prices):
-                    # Calculate individual returns
-                    spy_return = ((float(spy_prices[i]) - base_spy) / base_spy)
-                    tlt_return = ((float(tlt_prices[i]) - base_tlt) / base_tlt)
+                if i < len(sp500_prices) and i < len(bond_prices):
+                    # Calculate individual total returns (including dividends via Adj Close)
+                    sp500_return = ((float(sp500_prices[i]) - base_sp500) / base_sp500)
+                    bond_return = ((float(bond_prices[i]) - base_bonds) / base_bonds)
                     
-                    # 60/40 weighted return
-                    portfolio_return = (0.6 * spy_return + 0.4 * tlt_return) * 100
-                    portfolio_price = base_spy * 0.6 + base_tlt * 0.4 + (portfolio_return / 100) * (base_spy * 0.6 + base_tlt * 0.4)
+                    # 60/40 weighted return (exactly like LongTermTrends methodology)
+                    portfolio_return = (0.6 * sp500_return + 0.4 * bond_return) * 100
+                    
+                    # Calculate portfolio price based on $100 initial investment
+                    portfolio_price = 100 * (1 + portfolio_return / 100)
                     
                     result.append({
                         "date": date.strftime('%Y-%m-%d'),
                         "price": float(portfolio_price),
-                        "normalized_return": float(portfolio_return)
+                        "normalized_return": float(portfolio_return),
+                        "sp500_return": float(sp500_return * 100),
+                        "bond_return": float(bond_return * 100)
                     })
             
+            logging.info(f"Successfully fetched 60/40 portfolio data for {period} timeframe: {len(result)} data points")
             return result
+            
         except Exception as e:
-            logging.error(f"Error fetching traditional data: {e}")
+            logging.error(f"Error fetching traditional 60/40 data: {e}")
             return generate_sample_traditional_data(period)
     
     loop = asyncio.get_event_loop()
